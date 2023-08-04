@@ -10,6 +10,8 @@ const S3_TRANSFORMED_IMAGE_BUCKET = process.env.transformedImageBucketName;
 const TRANSFORMED_IMAGE_CACHE_TTL = process.env.transformedImageCacheTTL;
 const MAX_IMAGE_SIZE = parseInt(process.env.maxImageSize);
 
+const allowedSized = [64, 100, 112, 200, 250, 400, 450, 627, 800, 1000, 1200];
+
 export const handler = async (event) => {
     // Validate if this is a GET request
     if (!event.requestContext || !event.requestContext.http || !(event.requestContext.http.method === 'GET')) return sendError(400, 'Only GET method is supported', event);
@@ -48,6 +50,11 @@ export const handler = async (event) => {
         var resizingOptions = {};
         if (operationsJSON['width']) resizingOptions.width = parseInt(operationsJSON['width']);
         if (operationsJSON['height']) resizingOptions.height = parseInt(operationsJSON['height']);
+
+        // Check if resizingOptions.height and width are in the allowedSized array and if not, return an error
+        if(resizingOptions.height && !allowedSized.includes(resizingOptions.height)) return sendError(400, 'Height not allowed', resizingOptions.height);
+        if(resizingOptions.width && !allowedSized.includes(resizingOptions.width)) return sendError(400, 'Width not allowed', resizingOptions.width);
+
         if (resizingOptions) transformedImage = transformedImage.resize(resizingOptions);
         // check if rotation is needed
         if (imageMetadata.orientation) transformedImage = transformedImage.rotate();
